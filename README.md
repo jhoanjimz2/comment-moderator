@@ -35,7 +35,7 @@ Proyecto realizado como prueba técnica.
 Clonar el repositorio:
 
 ```bash
-git clone <URL_DEL_REPOSITORIO>
+git clone https://github.com/jhoanjimz2/comment-moderator
 cd comment-moderator
 ```
 

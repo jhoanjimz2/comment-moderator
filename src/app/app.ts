@@ -1,11 +1,10 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
+import { Moderation } from './features/moderation/moderation';
 
 @Component({
   selector: 'app-root',
-  imports: [],
-  templateUrl: './app.html',
-  styleUrl: './app.scss'
+  standalone: true,
+  imports: [Moderation],
+  template: '<app-moderation />'
 })
-export class App {
-  protected readonly title = signal('comment-moderator');
-}
+export class App {}

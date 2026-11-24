@@ -6,13 +6,12 @@ import {
   signal
 } from '@angular/core';
 
-import { DatePipe }                      from '@angular/common';
-import { toSignal }                      from '@angular/core/rxjs-interop';
-import { catchError, finalize, map, of } from 'rxjs';
+import { DatePipe }                            from '@angular/common';
+import { toObservable, toSignal }              from '@angular/core/rxjs-interop';
+import { catchError, finalize, of, switchMap } from 'rxjs';
 
-import { CommentService }                from './data/comment.service';
-import { classifyComment }               from './domain/comment-classifier';
-import { normalizeText }                 from './domain/classification-rules';
+import { CommentService }                      from './data/comment.service';
+import { normalizeText }                       from './utils/normalize-text';
 
 import {
   ClassifiedComment,
@@ -36,17 +35,24 @@ export class Moderation {
   readonly searchTerm = signal('');
   readonly isLoading = signal(true);
   readonly loadError = signal(false);
+  private readonly reloadTrigger = signal(0);
 
   readonly comments = toSignal(
-    this.commentService.getComments().pipe(
-      map(comments => comments.map(classifyComment)),
-      catchError(() => {
-        this.loadError.set(true);
-        return of([] as ClassifiedComment[]);
+    toObservable(this.reloadTrigger).pipe(
+      switchMap(() => {
+        this.isLoading.set(true);
+        this.loadError.set(false);
+
+        return this.commentService.getComments().pipe(
+          catchError(() => {
+            this.loadError.set(true);
+            return of([] as ClassifiedComment[]);
+          }),
+          finalize(() => this.isLoading.set(false)),
+        );
       }),
-      finalize(() => this.isLoading.set(false))
     ),
-    { initialValue: [] as ClassifiedComment[] }
+    { initialValue: [] as ClassifiedComment[] },
   );
 
   readonly filteredComments = computed(() => {
@@ -88,5 +94,9 @@ export class Moderation {
   clearFilters(): void {
     this.selectedCategory.set('todos');
     this.searchTerm.set('');
+  }
+
+  retryLoad(): void {
+    this.reloadTrigger.update(value => value + 1);
   }
 }

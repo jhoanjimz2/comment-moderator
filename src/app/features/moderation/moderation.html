@@ -1,140 +1,206 @@
+
 <main class="dashboard">
   <header class="dashboard__header">
     <div>
       <span class="eyebrow">CONTENT MODERATION</span>
       <h1>Moderación de comentarios</h1>
-      <p>Supervisa, clasifica y gestiona los comentarios de la comunidad.</p>
+      <p>
+        Supervisa, clasifica y gestiona los comentarios de la comunidad.
+      </p>
     </div>
   </header>
 
   <section class="stats">
     <article class="stat-card">
       <span>Total de comentarios</span>
-      <strong>{{ stats().total }}</strong>
+      @if (isLoading()) {
+        <div class="stat-placeholder" aria-hidden="true"></div>
+      } @else {
+        <strong>{{ stats().total }}</strong>
+      }
     </article>
 
     <article class="stat-card">
       <span>Publicables</span>
-      <strong>{{ stats().ok }}</strong>
+      @if (isLoading()) {
+        <div class="stat-placeholder" aria-hidden="true"></div>
+      } @else {
+        <strong>{{ stats().ok }}</strong>
+      }
     </article>
 
     <article class="stat-card">
       <span>Spam detectado</span>
-      <strong>{{ stats().spam }}</strong>
+      @if (isLoading()) {
+        <div class="stat-placeholder" aria-hidden="true"></div>
+      } @else {
+        <strong>{{ stats().spam }}</strong>
+      }
     </article>
 
     <article class="stat-card">
       <span>Requieren revisión</span>
-      <strong>{{ stats().revisar }}</strong>
+      @if (isLoading()) {
+        <div class="stat-placeholder" aria-hidden="true"></div>
+      } @else {
+        <strong>{{ stats().revisar }}</strong>
+      }
     </article>
   </section>
 
   <section class="comments">
-  <div class="comments__header">
-    <div>
-      <h2>Comentarios de la comunidad</h2>
-      <p>{{ filteredComments().length }} comentarios encontrados</p>
-    </div>
+    <div class="comments__header">
+      <div>
+        <h2>Comentarios de la comunidad</h2>
+        <p>
+          @if (isLoading()) {
+            Preparando resultados...
+          } @else if (loadError()) {
+            No se pudieron cargar los comentarios
+          } @else {
+            {{ filteredComments().length }} comentarios encontrados
+          }
+        </p>
+      </div>
 
-    <nav class="filters" aria-label="Filtrar comentarios">
-      <button
-        type="button"
-        [class.active]="selectedCategory() === 'todos'"
-        [attr.aria-pressed]="selectedCategory() === 'todos'"
-        (click)="filterBy('todos')">
-        Todos
-      </button>
-
-      <button
-        type="button"
-        [class.active]="selectedCategory() === 'ok'"
-        [attr.aria-pressed]="selectedCategory() === 'ok'"
-        (click)="filterBy('ok')">
-        Publicables
-      </button>
-
-      <button
-        type="button"
-        [class.active]="selectedCategory() === 'spam'"
-        [attr.aria-pressed]="selectedCategory() === 'spam'"
-        (click)="filterBy('spam')">
-        Spam
-      </button>
-
-      <button
-        type="button"
-        [class.active]="selectedCategory() === 'revisar'"
-        [attr.aria-pressed]="selectedCategory() === 'revisar'"
-        (click)="filterBy('revisar')">
-        Por revisar
-      </button>
-    </nav>
-  </div>
-
-  <div class="comments__toolbar">
-    <label class="search-field">
-      <span class="sr-only">Buscar comentarios</span>
-      <input
-        #searchInput
-        type="search"
-        placeholder="Buscar por usuario o contenido..."
-        [value]="searchTerm()"
-        (input)="updateSearch(searchInput.value)"
-      />
-    </label>
-  </div>
-
-  @if (isLoading()) {
-    <div class="empty-state" role="status">
-      Cargando comentarios...
-    </div>
-  } @else if (loadError()) {
-    <div class="empty-state" role="alert">
-      No fue posible cargar los comentarios.
-    </div>
-  } @else {
-    <div class="comments__list">
-      @for (comment of filteredComments(); track comment.id) {
-        <article class="comment-card">
-          <div class="comment-card__header">
-            <div class="comment-card__author">
-              <strong>{{ comment.usuario }}</strong>
-              <span>
-                {{ comment.fecha | date:'dd/MM/yyyy HH:mm' }}
-              </span>
-            </div>
-
-            <span
-              class="status"
-              [class.status--ok]="comment.categoria === 'ok'"
-              [class.status--spam]="comment.categoria === 'spam'"
-              [class.status--review]="comment.categoria === 'revisar'">
-              {{ comment.categoria }}
-            </span>
-          </div>
-
-          <p class="comment-card__text">
-            {{ comment.texto || 'Comentario sin contenido' }}
-          </p>
-
-          <div class="comment-card__footer">
-            <span>{{ comment.motivo }}</span>
-            <span>{{ comment.reportes }} reportes</span>
-          </div>
-        </article>
-      } @empty {
-        <div class="empty-state">
-          <p>No encontramos comentarios con esos filtros.</p>
+      @if (!isLoading() && !loadError()) {
+        <nav class="filters" aria-label="Filtrar comentarios">
+          <button
+            type="button"
+            [class.active]="selectedCategory() === 'todos'"
+            [attr.aria-pressed]="selectedCategory() === 'todos'"
+            (click)="filterBy('todos')">
+            Todos
+          </button>
 
           <button
             type="button"
-            class="reset-button"
-            (click)="clearFilters()">
-            Limpiar filtros
+            [class.active]="selectedCategory() === 'ok'"
+            [attr.aria-pressed]="selectedCategory() === 'ok'"
+            (click)="filterBy('ok')">
+            Publicables
           </button>
-        </div>
+
+          <button
+            type="button"
+            [class.active]="selectedCategory() === 'spam'"
+            [attr.aria-pressed]="selectedCategory() === 'spam'"
+            (click)="filterBy('spam')">
+            Spam
+          </button>
+
+          <button
+            type="button"
+            [class.active]="selectedCategory() === 'revisar'"
+            [attr.aria-pressed]="selectedCategory() === 'revisar'"
+            (click)="filterBy('revisar')">
+            Por revisar
+          </button>
+        </nav>
       }
     </div>
-  }
-</section>
+
+    @if (isLoading()) {
+      <div
+        class="processing-state"
+        role="status"
+        aria-live="polite"
+        aria-busy="true">
+
+        <div class="processing-state__visual">
+          <div class="processing-state__ring">
+            <span class="processing-state__core"></span>
+          </div>
+        </div>
+
+        <h3>Analizando comentarios</h3>
+
+        <p>
+          Estamos procesando los comentarios y evaluando
+          su contenido para identificar posibles infracciones.
+        </p>
+
+        <div class="processing-state__activity">
+          <span class="activity-dot"></span>
+          Clasificación en proceso
+        </div>
+
+        <span class="processing-state__note">
+          El análisis con inteligencia artificial puede tardar
+          un poco más de lo habitual.
+        </span>
+      </div>
+    } @else if (loadError()) {
+      <div class="empty-state">
+        <h3>No pudimos cargar los comentarios</h3>
+        <p>
+          Verifica que el servidor esté disponible
+          e intenta nuevamente.
+        </p>
+
+        <button
+          type="button"
+          class="reset-button"
+          (click)="retryLoad()">
+          Reintentar
+        </button>
+      </div>
+    } @else {
+      <div class="comments__toolbar">
+        <label class="search-field">
+          <span class="sr-only">Buscar comentarios</span>
+          <input
+            #searchInput
+            type="search"
+            placeholder="Buscar por usuario o contenido..."
+            [value]="searchTerm()"
+            (input)="updateSearch(searchInput.value)"
+          />
+        </label>
+      </div>
+
+      <div class="comments__list">
+        @for (comment of filteredComments(); track comment.id) {
+          <article class="comment-card">
+            <div class="comment-card__header">
+              <div class="comment-card__author">
+                <strong>{{ comment.usuario }}</strong>
+                <span>
+                  {{ comment.fecha | date:'dd/MM/yyyy HH:mm' }}
+                </span>
+              </div>
+
+              <span
+                class="status"
+                [class.status--ok]="comment.categoria === 'ok'"
+                [class.status--spam]="comment.categoria === 'spam'"
+                [class.status--review]="comment.categoria === 'revisar'">
+                {{ comment.categoria }}
+              </span>
+            </div>
+
+            <p class="comment-card__text">
+              {{ comment.texto || 'Comentario sin contenido' }}
+            </p>
+
+            <div class="comment-card__footer">
+              <span>{{ comment.motivo }}</span>
+              <span>{{ comment.reportes }} reportes</span>
+            </div>
+          </article>
+        } @empty {
+          <div class="empty-state">
+            <p>No encontramos comentarios con esos filtros.</p>
+
+            <button
+              type="button"
+              class="reset-button"
+              (click)="clearFilters()">
+              Limpiar filtros
+            </button>
+          </div>
+        }
+      </div>
+    }
+  </section>
 </main>

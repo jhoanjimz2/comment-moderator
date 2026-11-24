@@ -1,46 +1,36 @@
 # Bitácora técnica — Comment Moderator
 
-**Proyecto:** Clasificación automática de comentarios  
-**Tecnologías:** Angular 22, TypeScript, Signals, RxJS, SCSS y Vitest.
+**Proyecto:** Clasificación automática de comentarios de una comunidad
+**Tecnologías:** Angular 22, TypeScript, Signals, RxJS, SCSS, NestJS 12, API REST, Vitest y Ollama (opcional).
 
-## 1. Enfoque y desarrollo
+## 1. Enfoque inicial
 
-Desarrollé una aplicación web que procesa 20 comentarios desde un archivo JSON y los clasifica en tres categorías: `ok`, `spam` y `revisar`.
+Comencé con una aplicación Angular que leía 20 comentarios desde un JSON local y los clasificaba en `ok`, `spam` y `revisar`. Separé las reglas de la interfaz para poder probarlas sin renderizar componentes y utilicé Signals para filtros, búsqueda y estadísticas. El objetivo inicial era construir una solución sencilla, reproducible y explicable.
 
-Separé la lógica de clasificación de la interfaz Angular mediante funciones TypeScript independientes. Utilicé un servicio HTTP para obtener los datos, Signals para administrar los filtros y estadísticas, y SCSS para construir una interfaz responsive.
+## 2. Observaciones y evolución de la solución
 
-Elegí reglas deterministas porque permiten obtener resultados rápidos, reproducibles y fáciles de explicar, sin depender de servicios externos.
+Durante la revisión técnica, Daniela señaló que algunas reglas parecían ajustadas a las frases exactas del archivo de ejemplo y que era necesario reconocer expresiones nuevas, como «te voy a buscar» en contexto amenazante o «eres un tarado». También solicitó priorizar los comentarios más graves, de modo que las amenazas aparecieran antes que comentarios enviados a revisión únicamente por sus reportes.
 
-## 2. Uso de inteligencia artificial
+A partir de esas observaciones amplié los patrones y los casos de prueba, incorporé niveles de gravedad y ordené los resultados colocando primero la categoría `revisar` y, dentro de ella, los comentarios de mayor gravedad. También corregí casos de insultos dirigidos a grupos, publicidad con enlaces y enlaces informativos que antes se trataban como sospechosos.
 
-Utilicé ChatGPT como herramienta de apoyo para analizar alternativas de implementación, revisar código, proponer casos de prueba y diagnosticar errores.
+## 3. Arquitectura y uso de IA
 
-No integré IA como motor de clasificación porque consideré más apropiado resolver primero los requisitos con una solución sencilla y verificable.
+Tras evaluar la necesidad de una clasificación más contextual, trasladé la lógica de moderación a un backend NestJS. Angular quedó encargado de consumir la API y presentar resultados; el backend centraliza el acceso al JSON, la clasificación y el ordenamiento.
 
-Las sugerencias de IA no se incorporaron sin validación: ejecuté pruebas unitarias y compilaciones para comprobar su comportamiento y realicé correcciones cuando fue necesario.
+Probé una integración con OpenAI, pero recibí un error de cuota insuficiente. Como alternativa incorporé Ollama con `qwen2.5:3b`, ejecutado localmente. Durante las pruebas, el modelo confundió «Te voy a buscar el libro mañana» con una ofensa; ajusté el prompt para incluir contrastes entre amenazas y expresiones cotidianas. Para garantizar que la prueba funcione sin instalar modelos ni depender de servicios externos, dejé el proveedor de reglas como opción predeterminada y Ollama como alternativa configurable.
 
-## 3. Dificultades y correcciones
+Utilicé ChatGPT para explorar alternativas, revisar implementaciones, proponer pruebas y diagnosticar errores. Las sugerencias se contrastaron con ejecución local y resultados observables; no asumí que la IA acertara siempre.
 
-Uno de los principales desafíos fue evitar clasificaciones incorrectas en comentarios ambiguos.
+## 4. Dificultades, correcciones y validación
 
-Por ejemplo, una URL de YouTube contenía el carácter `?` como parte de sus parámetros, lo que inicialmente provocaba que el sistema interpretara el comentario como una pregunta y lo enviara a revisión. Corregí la regla para distinguir las URL de las preguntas reales.
+Una dificultad importante fue equilibrar la detección de contenido problemático con los falsos positivos. Por ejemplo, no toda URL representa spam y «te voy a buscar» no siempre constituye una amenaza. Refiné las condiciones de clasificación y añadí pruebas para distinguir algunos de esos contextos.
 
-También ajusté la detección de promociones repetitivas y números telefónicos escritos con espacios.
+Implementé **24 pruebas unitarias en el backend**: 20 para el clasificador por reglas y 4 para el servicio, incluyendo ordenamiento de amenazas, insultos y comentarios reportados. La última ejecución terminó con **24 pruebas aprobadas**. También comprobé que tanto NestJS como Angular generaran correctamente sus compilaciones de producción.
 
-Durante las pruebas identifiqué una inconsistencia en los totales esperados. Revisé los 20 comentarios individualmente y corregí los valores de referencia.
+## 5. Aprendizajes y mejoras futuras
 
-## 4. Validación y aprendizajes
+Este proceso reforzó la importancia de no diseñar reglas únicamente para superar un conjunto fijo de ejemplos. Aprendí a separar la clasificación de la presentación, a probar explícitamente la prioridad de las decisiones y a documentar los límites de un clasificador heurístico y de un modelo local.
 
-Implementé 16 pruebas unitarias con Vitest, incluyendo validaciones de los 20 comentarios originales.
+Con más tiempo incorporaría un conjunto etiquetado para medir precisión y falsos positivos, revisión humana, auditoría de decisiones, reglas configurables y pruebas de integración de extremo a extremo.
 
-El resultado final fue de 9 comentarios `ok`, 4 `spam` y 7 `revisar`, de acuerdo con los criterios definidos.
-
-Este ejercicio reforzó la importancia de diseñar reglas explicables, contemplar falsos positivos y validar los resultados con datos reales.
-
-## 5. Mejoras futuras
-
-En una siguiente versión incorporaría revisión manual de comentarios, un historial de decisiones y un servicio de IA para analizar casos ambiguos.
-
-También ampliaría las pruebas y permitiría ajustar los criterios de moderación sin modificar directamente el código.
-
-**Conclusión:** prioricé una solución funcional, mantenible, verificable y proporcional al alcance de la prueba técnica.
+**Conclusión:** la solución evolucionó desde una clasificación local en Angular hacia una arquitectura Angular + NestJS con reglas verificables, priorización por gravedad y un proveedor de IA opcional. El resultado es funcional y reproducible, aunque no pretende resolver todos los casos de moderación real.

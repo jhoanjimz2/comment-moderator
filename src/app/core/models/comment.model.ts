@@ -11,4 +11,5 @@ export interface Comment {
 export interface ClassifiedComment extends Comment {
   categoria: CommentCategory;
   motivo: string;
+  gravedad: number;
 }

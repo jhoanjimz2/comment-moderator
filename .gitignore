@@ -42,3 +42,22 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Backend
+/backend/node_modules/
+/backend/dist/
+/backend/coverage/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# Local configuration
+*.local
+
+# TypeScript incremental compilation
+*.tsbuildinfo

@@ -1,15 +1,15 @@
 # Comment Moderator
 
-Aplicación web de moderación de comentarios desarrollada como prueba técnica. Combina **Angular 22** para la interfaz y **NestJS** para la clasificación de contenido. Procesa un conjunto local de 20 comentarios, muestra estadísticas y permite buscar y filtrar los resultados.
+Aplicación web de moderación de comentarios desarrollada como prueba técnica. Combina **Angular 22** para la interfaz y **NestJS 12** para la clasificación de contenido. Procesa un conjunto local de 20 comentarios, muestra estadísticas y permite buscar y filtrar los resultados.
 
 ## Funcionalidades
 
 - Clasificación en `ok`, `spam` y `revisar`, con motivo y nivel de gravedad.
 - Priorización de comentarios que requieren revisión, ordenados por gravedad descendente.
-- Detección heurística de amenazas, insultos, publicidad no solicitada, datos de contacto, señales de enlaces sospechosos y múltiples reportes.
+- Detección heurística de amenazas, insultos, publicidad no solicitada, posibles datos de contacto, señales de enlaces sospechosos y múltiples reportes.
 - Estadísticas, filtros por categoría y búsqueda por usuario o contenido.
 - Interfaz responsive con estados de carga, error y ausencia de resultados.
-- Dos proveedores de moderación seleccionables mediante configuración: **reglas** (predeterminado) y **Ollama** (opcional).
+- Dos proveedores de moderación configurables: **reglas** (predeterminado) y **Ollama** (opcional).
 
 ## Tecnologías
 
@@ -19,20 +19,32 @@ Aplicación web de moderación de comentarios desarrollada como prueba técnica.
 
 ## Requisitos
 
-- Node.js y npm compatibles con las versiones de Angular y NestJS utilizadas.
-- Dos terminales para ejecutar frontend y backend en desarrollo.
-- **No es necesario instalar Ollama** para usar el proveedor predeterminado `rules`.
+- **Node.js 22** (durante el desarrollo se utilizó la versión `22.22.3`).
+- **Yarn Classic 1.22.x** para instalar el frontend, que utiliza `yarn.lock`.
+- **npm** para instalar el backend, que utiliza `backend/package-lock.json`.
+- Dos terminales para ejecutar frontend y backend durante el desarrollo.
+- **No es necesario instalar Ollama** para utilizar el proveedor predeterminado `rules`.
+
+> **Importante:** no mezcles gestores de paquetes: usa Yarn en la raíz del proyecto y npm dentro de `backend/`. El frontend no incluye `package-lock.json`; por eso `npm ci` no es el comando adecuado para instalarlo.
+
+Para comprobar Yarn:
+
+```bash
+yarn --version
+```
+
+Si no está disponible, puedes instalar Yarn Classic 1.22.x o habilitarlo mediante el gestor de paquetes que utilices habitualmente.
 
 ## Instalación y ejecución
 
-Clonar el repositorio:
+### 1. Clonar el repositorio
 
 ```bash
 git clone https://github.com/jhoanjimz2/comment-moderator.git
 cd comment-moderator
 ```
 
-**1. Iniciar el backend** (terminal 1):
+### 2. Instalar e iniciar el backend (terminal 1)
 
 ```bash
 cd backend
@@ -43,14 +55,16 @@ npm run start:dev
 
 El backend escucha en `http://localhost:3000` con la configuración de desarrollo utilizada en el proyecto.
 
-**2. Iniciar el frontend** (terminal 2, desde la raíz del repositorio):
+### 3. Instalar e iniciar el frontend (terminal 2)
+
+Desde la **raíz del repositorio** (`comment-moderator/`):
 
 ```bash
-npm install
-npm start
+yarn install --frozen-lockfile
+yarn start
 ```
 
-Abrir **http://localhost:4200**. El archivo `proxy.conf.json`, configurado en Angular, redirige las solicitudes `/api` al backend local. **Ambos procesos deben estar en ejecución.**
+Abre `http://localhost:4200` en el navegador. El archivo `proxy.conf.json`, configurado en Angular, redirige las solicitudes `/api` al backend local. **Ambos procesos deben estar en ejecución.**
 
 > Si el puerto del backend cambia, actualiza también `proxy.conf.json`.
 
@@ -64,8 +78,14 @@ OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=qwen2.5:3b
 ```
 
-- **`rules`**: clasificador determinista local, sin servicios externos ni claves API.
-- **`ollama`**: proveedor opcional de análisis contextual mediante un modelo ejecutado localmente. Requiere instalar Ollama, disponer del modelo configurado y tener el servicio en funcionamiento. Por ejemplo, con el modelo usado durante el desarrollo: `ollama pull qwen2.5:3b`.
+- **`rules`:** clasificador determinista local, sin servicios externos ni claves API.
+- **`ollama`:** proveedor opcional de análisis contextual mediante un modelo ejecutado localmente. Requiere instalar Ollama, descargar el modelo configurado y mantener el servicio en funcionamiento. Por ejemplo:
+
+  ```bash
+  ollama pull qwen2.5:3b
+  ```
+
+  Después, cambia `MODERATION_PROVIDER=ollama` en `backend/.env` y reinicia el backend.
 
 El proveedor Ollama puede tardar más en procesar los comentarios y también puede producir falsos positivos o negativos. No es necesario para evaluar la aplicación en su configuración predeterminada.
 
@@ -73,8 +93,14 @@ El proveedor Ollama puede tardar más en procesar los comentarios y también pue
 
 | Método | Ruta | Descripción |
 | --- | --- | --- |
-| `GET` | `/api/moderation/comments` | Lee los 20 comentarios del JSON del backend, los clasifica y devuelve ordenados. |
+| `GET` | `/api/moderation/comments` | Lee los 20 comentarios del JSON del backend, los clasifica y los devuelve ordenados. |
 | `POST` | `/api/moderation/classify` | Clasifica una lista de comentarios enviada por el cliente. |
+
+Ejemplo de consulta de los comentarios:
+
+```bash
+curl http://localhost:3000/api/moderation/comments
+```
 
 Ejemplo de solicitud al endpoint de clasificación:
 
@@ -84,7 +110,7 @@ curl -X POST http://localhost:3000/api/moderation/classify \
   -d '[{"id":1,"usuario":"demo","fecha":"2026-11-24","texto":"Eres un tarado","reportes":0}]'
 ```
 
-> El ejemplo presupone que el endpoint recibe directamente un arreglo JSON, como en la implementación desarrollada. Si el controlador usa un objeto contenedor, ajusta el cuerpo al DTO real antes de publicar.
+> **Verificación pendiente:** el ejemplo de `POST` presupone que el controlador recibe directamente un arreglo JSON. Confirma la firma de `moderation.controller.ts` antes de publicar; si recibe un objeto contenedor, adapta el cuerpo al contrato real.
 
 ## Criterios de clasificación
 
@@ -127,6 +153,7 @@ comment-moderator/
 │   │       ├── moderation.service.ts
 │   │       └── moderation.service.spec.ts
 │   ├── .env.example
+│   ├── package-lock.json
 │   └── package.json
 ├── src/app/
 │   ├── core/models/comment.model.ts
@@ -138,6 +165,8 @@ comment-moderator/
 │       └── moderation.scss
 ├── proxy.conf.json
 ├── angular.json
+├── yarn.lock
+├── BITACORA.md
 └── package.json
 ```
 
@@ -145,23 +174,32 @@ El frontend consume los resultados de la API y se ocupa de su presentación, fil
 
 ## Pruebas y compilación
 
-**Backend:**
+### Backend
+
+Desde `backend/`:
 
 ```bash
-cd backend
 npm test
 npm run build
 ```
 
 En la última ejecución local se aprobaron **24 pruebas en dos archivos**: 20 del clasificador por reglas y 4 del servicio de moderación. Se verificaron amenazas, insultos, spam, enlaces, reportes, casos benignos y ordenamiento por gravedad.
 
-**Frontend** (desde la raíz):
+### Frontend
+
+Desde la raíz del repositorio:
 
 ```bash
-npm run build
+yarn build
 ```
 
-La última compilación de Angular y la del backend finalizaron correctamente. La ejecución de las pruebas del frontend no forma parte de la evidencia de las 24 pruebas del backend.
+Para ejecutar las pruebas configuradas en el frontend:
+
+```bash
+yarn test
+```
+
+La última compilación de Angular y la del backend finalizaron correctamente. Las **24 pruebas aprobadas** corresponden al backend; no se incluyen en ese total pruebas del frontend.
 
 ## Decisiones técnicas
 
@@ -170,6 +208,7 @@ La última compilación de Angular y la del backend finalizaron correctamente. L
 - **Reglas explicables:** cada resultado incluye un motivo y una gravedad, útiles para la revisión humana.
 - **Signals y `computed`:** mantienen sincronizados los filtros, la búsqueda y las estadísticas del frontend.
 - **Pruebas de regresión:** incluyen expresiones adicionales a las presentes en el conjunto original y verifican el ordenamiento.
+- **Gestores de paquetes separados:** Yarn Classic para Angular y npm para NestJS, con sus respectivos archivos de bloqueo para instalaciones reproducibles.
 
 ## Limitaciones y mejoras posibles
 
